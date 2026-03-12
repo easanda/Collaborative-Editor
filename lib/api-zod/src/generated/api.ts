@@ -8,7 +8,6 @@
 import * as zod from "zod";
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -22,6 +21,8 @@ export const ListDocumentsResponseItem = zod.object({
   id: zod.string(),
   title: zod.string(),
   content: zod.string(),
+  tags: zod.array(zod.string()),
+  shareToken: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -33,6 +34,24 @@ export const ListDocumentsResponse = zod.array(ListDocumentsResponseItem);
 export const CreateDocumentBody = zod.object({
   title: zod.string(),
   content: zod.string().optional(),
+  tags: zod.array(zod.string()).optional(),
+});
+
+/**
+ * @summary Get a document by its share token (read-only)
+ */
+export const GetDocumentByShareTokenParams = zod.object({
+  token: zod.coerce.string(),
+});
+
+export const GetDocumentByShareTokenResponse = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  content: zod.string(),
+  tags: zod.array(zod.string()),
+  shareToken: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
 });
 
 /**
@@ -46,6 +65,8 @@ export const GetDocumentResponse = zod.object({
   id: zod.string(),
   title: zod.string(),
   content: zod.string(),
+  tags: zod.array(zod.string()),
+  shareToken: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -60,12 +81,15 @@ export const UpdateDocumentParams = zod.object({
 export const UpdateDocumentBody = zod.object({
   title: zod.string().optional(),
   content: zod.string().optional(),
+  tags: zod.array(zod.string()).optional(),
 });
 
 export const UpdateDocumentResponse = zod.object({
   id: zod.string(),
   title: zod.string(),
   content: zod.string(),
+  tags: zod.array(zod.string()),
+  shareToken: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -78,17 +102,132 @@ export const DeleteDocumentParams = zod.object({
 });
 
 /**
- * @summary Save document to GitHub Gist
+ * @summary Duplicate a document
+ */
+export const DuplicateDocumentParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+/**
+ * @summary Update document tags
+ */
+export const UpdateDocumentTagsParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const UpdateDocumentTagsBody = zod.object({
+  tags: zod.array(zod.string()),
+});
+
+export const UpdateDocumentTagsResponse = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  content: zod.string(),
+  tags: zod.array(zod.string()),
+  shareToken: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Generate a share token for a document
+ */
+export const GenerateShareTokenParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const GenerateShareTokenResponse = zod.object({
+  shareToken: zod.string(),
+  shareUrl: zod.string(),
+});
+
+/**
+ * @summary Revoke share token for a document
+ */
+export const RevokeShareTokenParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const RevokeShareTokenResponse = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  content: zod.string(),
+  tags: zod.array(zod.string()),
+  shareToken: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary List all saved versions of a document
+ */
+export const ListDocumentVersionsParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const ListDocumentVersionsResponseItem = zod.object({
+  id: zod.string(),
+  documentId: zod.string(),
+  title: zod.string(),
+  content: zod.string(),
+  label: zod.string().nullish(),
+  createdAt: zod.date(),
+});
+export const ListDocumentVersionsResponse = zod.array(
+  ListDocumentVersionsResponseItem,
+);
+
+/**
+ * @summary Save the current state as a version snapshot
+ */
+export const SaveDocumentVersionParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const SaveDocumentVersionBody = zod.object({
+  label: zod.string().optional(),
+});
+
+/**
+ * @summary Delete a document version
+ */
+export const DeleteDocumentVersionParams = zod.object({
+  id: zod.coerce.string(),
+  versionId: zod.coerce.string(),
+});
+
+/**
+ * @summary Restore a document to a previous version
+ */
+export const RestoreDocumentVersionParams = zod.object({
+  id: zod.coerce.string(),
+  versionId: zod.coerce.string(),
+});
+
+export const RestoreDocumentVersionResponse = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  content: zod.string(),
+  tags: zod.array(zod.string()),
+  shareToken: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Save document to GitHub Gist (create or update)
  */
 export const SaveToGithubBody = zod.object({
   filename: zod.string(),
   content: zod.string(),
   description: zod.string().optional(),
   isPublic: zod.boolean().optional(),
+  gistId: zod.string().nullish(),
 });
 
 export const SaveToGithubResponse = zod.object({
   gistId: zod.string(),
   url: zod.string(),
   htmlUrl: zod.string(),
+  isUpdate: zod.boolean(),
 });

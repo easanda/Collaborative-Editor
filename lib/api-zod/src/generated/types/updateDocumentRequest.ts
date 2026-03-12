@@ -9,4 +9,5 @@
 export interface UpdateDocumentRequest {
   title?: string;
   content?: string;
+  tags?: string[];
 }

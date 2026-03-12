@@ -11,6 +11,8 @@ tags:
     description: Health operations
   - name: documents
     description: Document operations
+  - name: versions
+    description: Document version history
   - name: github
     description: GitHub integration
 paths:
@@ -19,7 +21,6 @@ paths:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -58,6 +59,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Document"
+  /documents/share/{token}:
+    get:
+      operationId: getDocumentByShareToken
+      tags: [documents]
+      summary: Get a document by its share token (read-only)
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /documents/{id}:
     get:
       operationId: getDocument
@@ -130,11 +155,214 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /documents/{id}/duplicate:
+    post:
+      operationId: duplicateDocument
+      tags: [documents]
+      summary: Duplicate a document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Duplicated document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /documents/{id}/tags:
+    patch:
+      operationId: updateDocumentTags
+      tags: [documents]
+      summary: Update document tags
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTagsRequest"
+      responses:
+        "200":
+          description: Updated document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /documents/{id}/share:
+    post:
+      operationId: generateShareToken
+      tags: [documents]
+      summary: Generate a share token for a document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Share token generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareTokenResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: revokeShareToken
+      tags: [documents]
+      summary: Revoke share token for a document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Token revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /documents/{id}/versions:
+    get:
+      operationId: listDocumentVersions
+      tags: [versions]
+      summary: List all saved versions of a document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of versions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DocumentVersion"
+    post:
+      operationId: saveDocumentVersion
+      tags: [versions]
+      summary: Save the current state as a version snapshot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveVersionRequest"
+      responses:
+        "201":
+          description: Created version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentVersion"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /documents/{id}/versions/{versionId}:
+    delete:
+      operationId: deleteDocumentVersion
+      tags: [versions]
+      summary: Delete a document version
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: versionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /documents/{id}/versions/{versionId}/restore:
+    post:
+      operationId: restoreDocumentVersion
+      tags: [versions]
+      summary: Restore a document to a previous version
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: versionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Restored document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /github/save:
     post:
       operationId: saveToGithub
       tags: [github]
-      summary: Save document to GitHub Gist
+      summary: Save document to GitHub Gist (create or update)
       requestBody:
         required: true
         content:
@@ -155,7 +383,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "401":
-          description: Unauthorized - GitHub token not configured
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -178,6 +406,13 @@ components:
           type: string
         content:
           type: string
+        tags:
+          type: array
+          items:
+            type: string
+        shareToken:
+          type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -188,6 +423,7 @@ components:
         - id
         - title
         - content
+        - tags
         - createdAt
         - updatedAt
     CreateDocumentRequest:
@@ -197,6 +433,10 @@ components:
           type: string
         content:
           type: string
+        tags:
+          type: array
+          items:
+            type: string
       required:
         - title
     UpdateDocumentRequest:
@@ -205,6 +445,57 @@ components:
         title:
           type: string
         content:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+    UpdateTagsRequest:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+      required:
+        - tags
+    ShareTokenResponse:
+      type: object
+      properties:
+        shareToken:
+          type: string
+        shareUrl:
+          type: string
+      required:
+        - shareToken
+        - shareUrl
+    DocumentVersion:
+      type: object
+      properties:
+        id:
+          type: string
+        documentId:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        label:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - documentId
+        - title
+        - content
+        - createdAt
+    SaveVersionRequest:
+      type: object
+      properties:
+        label:
           type: string
     SaveToGithubRequest:
       type: object
@@ -217,6 +508,9 @@ components:
           type: string
         isPublic:
           type: boolean
+        gistId:
+          type: string
+          nullable: true
       required:
         - filename
         - content
@@ -229,10 +523,13 @@ components:
           type: string
         htmlUrl:
           type: string
+        isUpdate:
+          type: boolean
       required:
         - gistId
         - url
         - htmlUrl
+        - isUpdate
     ErrorResponse:
       type: object
       properties:

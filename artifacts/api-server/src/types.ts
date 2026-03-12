@@ -11,6 +11,23 @@ export interface TitleUpdateEvent {
   userId: string;
 }
 
+export interface CursorMoveEvent {
+  documentId: string;
+  userId: string;
+  username: string;
+  color: string;
+  position: number;
+  lineNumber?: number;
+}
+
+export interface UserTypingEvent {
+  documentId: string;
+  userId: string;
+  username: string;
+  color: string;
+  isTyping: boolean;
+}
+
 export interface UserJoinedEvent {
   userId: string;
   username: string;
@@ -36,6 +53,8 @@ export interface ServerToClientEvents {
   "user-joined": (event: UserJoinedEvent) => void;
   "user-left": (event: UserLeftEvent) => void;
   "document-users": (users: ActiveUser[]) => void;
+  "cursor-move": (event: CursorMoveEvent) => void;
+  "user-typing": (event: UserTypingEvent) => void;
 }
 
 export interface ClientToServerEvents {
@@ -43,6 +62,8 @@ export interface ClientToServerEvents {
   "title-update": (event: TitleUpdateEvent) => void;
   "join-document": (event: JoinDocumentEvent) => void;
   "leave-document": (event: { documentId: string; userId: string }) => void;
+  "cursor-move": (event: CursorMoveEvent) => void;
+  "user-typing": (event: UserTypingEvent) => void;
 }
 
 export interface ActiveUser {

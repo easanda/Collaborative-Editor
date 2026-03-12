@@ -11,4 +11,5 @@ export interface SaveToGithubRequest {
   content: string;
   description?: string;
   isPublic?: boolean;
+  gistId?: string | null;
 }

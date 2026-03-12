@@ -13,6 +13,8 @@ export interface Document {
   id: string;
   title: string;
   content: string;
+  tags: string[];
+  shareToken?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,11 +22,35 @@ export interface Document {
 export interface CreateDocumentRequest {
   title: string;
   content?: string;
+  tags?: string[];
 }
 
 export interface UpdateDocumentRequest {
   title?: string;
   content?: string;
+  tags?: string[];
+}
+
+export interface UpdateTagsRequest {
+  tags: string[];
+}
+
+export interface ShareTokenResponse {
+  shareToken: string;
+  shareUrl: string;
+}
+
+export interface DocumentVersion {
+  id: string;
+  documentId: string;
+  title: string;
+  content: string;
+  label?: string | null;
+  createdAt: string;
+}
+
+export interface SaveVersionRequest {
+  label?: string;
 }
 
 export interface SaveToGithubRequest {
@@ -32,12 +58,14 @@ export interface SaveToGithubRequest {
   content: string;
   description?: string;
   isPublic?: boolean;
+  gistId?: string | null;
 }
 
 export interface SaveToGithubResponse {
   gistId: string;
   url: string;
   htmlUrl: string;
+  isUpdate: boolean;
 }
 
 export interface ErrorResponse {

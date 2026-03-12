@@ -20,24 +20,46 @@ router.post("/save", async (req, res) => {
     return;
   }
 
-  const { filename, content, description, isPublic } = parsed.data;
+  const { filename, content, description, isPublic, gistId } = parsed.data;
 
-  const response = await fetch("https://api.github.com/gists", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-    body: JSON.stringify({
-      description: description ?? `Saved from Collaborative Markdown Editor`,
-      public: isPublic ?? false,
-      files: {
-        [filename]: { content },
+  let response: Response;
+  let isUpdate = false;
+
+  if (gistId) {
+    isUpdate = true;
+    response = await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
       },
-    }),
-  });
+      body: JSON.stringify({
+        description: description ?? `Updated from Collaborative Markdown Editor`,
+        files: {
+          [filename]: { content },
+        },
+      }),
+    });
+  } else {
+    response = await fetch("https://api.github.com/gists", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      body: JSON.stringify({
+        description: description ?? `Saved from Collaborative Markdown Editor`,
+        public: isPublic ?? false,
+        files: {
+          [filename]: { content },
+        },
+      }),
+    });
+  }
 
   if (!response.ok) {
     const err = await response.text();
@@ -54,6 +76,7 @@ router.post("/save", async (req, res) => {
     gistId: gist.id,
     url: gist.url,
     htmlUrl: gist.html_url,
+    isUpdate,
   });
 });
 

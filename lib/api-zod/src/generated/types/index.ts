@@ -8,8 +8,12 @@
 
 export * from "./createDocumentRequest";
 export * from "./document";
+export * from "./documentVersion";
 export * from "./errorResponse";
 export * from "./healthStatus";
 export * from "./saveToGithubRequest";
 export * from "./saveToGithubResponse";
+export * from "./saveVersionRequest";
+export * from "./shareTokenResponse";
 export * from "./updateDocumentRequest";
+export * from "./updateTagsRequest";

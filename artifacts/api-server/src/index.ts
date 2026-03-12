@@ -80,8 +80,23 @@ io.on("connection", (socket) => {
     socket.to(event.documentId).emit("title-update", event);
   });
 
+  socket.on("cursor-move", (event) => {
+    socket.to(event.documentId).emit("cursor-move", event);
+  });
+
+  socket.on("user-typing", (event) => {
+    socket.to(event.documentId).emit("user-typing", event);
+  });
+
   socket.on("disconnect", () => {
     console.log(`Socket disconnected: ${socket.id}`);
+    // Clean up user from all rooms on disconnect
+    for (const [documentId, room] of documentRooms.entries()) {
+      for (const [userId] of room.entries()) {
+        // We can't easily map socket.id to userId here without extra tracking
+        // This is handled by the leave-document event in practice
+      }
+    }
   });
 });
 

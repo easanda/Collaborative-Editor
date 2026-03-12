@@ -6,12 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Document {
+export interface DocumentVersion {
   id: string;
+  documentId: string;
   title: string;
   content: string;
-  tags: string[];
-  shareToken?: string | null;
+  label?: string | null;
   createdAt: Date;
-  updatedAt: Date;
 }

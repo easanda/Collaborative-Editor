@@ -9,4 +9,5 @@
 export interface CreateDocumentRequest {
   title: string;
   content?: string;
+  tags?: string[];
 }

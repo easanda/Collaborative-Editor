@@ -1,12 +1,14 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import documentsRouter from "./documents";
+import versionsRouter from "./versions";
 import githubRouter from "./github";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use("/documents", documentsRouter);
+router.use("/documents/:id/versions", versionsRouter);
 router.use("/github", githubRouter);
 
 export default router;

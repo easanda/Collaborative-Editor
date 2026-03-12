@@ -19,11 +19,15 @@ import type {
 import type {
   CreateDocumentRequest,
   Document,
+  DocumentVersion,
   ErrorResponse,
   HealthStatus,
   SaveToGithubRequest,
   SaveToGithubResponse,
+  SaveVersionRequest,
+  ShareTokenResponse,
   UpdateDocumentRequest,
+  UpdateTagsRequest,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -36,7 +40,6 @@ type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const getHealthCheckUrl = () => {
@@ -271,6 +274,95 @@ export const useCreateDocument = <
 > => {
   return useMutation(getCreateDocumentMutationOptions(options));
 };
+
+/**
+ * @summary Get a document by its share token (read-only)
+ */
+export const getGetDocumentByShareTokenUrl = (token: string) => {
+  return `/api/documents/share/${token}`;
+};
+
+export const getDocumentByShareToken = async (
+  token: string,
+  options?: RequestInit,
+): Promise<Document> => {
+  return customFetch<Document>(getGetDocumentByShareTokenUrl(token), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetDocumentByShareTokenQueryKey = (token: string) => {
+  return [`/api/documents/share/${token}`] as const;
+};
+
+export const getGetDocumentByShareTokenQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDocumentByShareToken>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  token: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDocumentByShareToken>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetDocumentByShareTokenQueryKey(token);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDocumentByShareToken>>
+  > = ({ signal }) =>
+    getDocumentByShareToken(token, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!token,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDocumentByShareToken>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDocumentByShareTokenQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDocumentByShareToken>>
+>;
+export type GetDocumentByShareTokenQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get a document by its share token (read-only)
+ */
+
+export function useGetDocumentByShareToken<
+  TData = Awaited<ReturnType<typeof getDocumentByShareToken>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  token: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDocumentByShareToken>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDocumentByShareTokenQueryOptions(token, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get a document by ID
@@ -531,7 +623,691 @@ export const useDeleteDocument = <
 };
 
 /**
- * @summary Save document to GitHub Gist
+ * @summary Duplicate a document
+ */
+export const getDuplicateDocumentUrl = (id: string) => {
+  return `/api/documents/${id}/duplicate`;
+};
+
+export const duplicateDocument = async (
+  id: string,
+  options?: RequestInit,
+): Promise<Document> => {
+  return customFetch<Document>(getDuplicateDocumentUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getDuplicateDocumentMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof duplicateDocument>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof duplicateDocument>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["duplicateDocument"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof duplicateDocument>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return duplicateDocument(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DuplicateDocumentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof duplicateDocument>>
+>;
+
+export type DuplicateDocumentMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Duplicate a document
+ */
+export const useDuplicateDocument = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof duplicateDocument>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof duplicateDocument>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getDuplicateDocumentMutationOptions(options));
+};
+
+/**
+ * @summary Update document tags
+ */
+export const getUpdateDocumentTagsUrl = (id: string) => {
+  return `/api/documents/${id}/tags`;
+};
+
+export const updateDocumentTags = async (
+  id: string,
+  updateTagsRequest: UpdateTagsRequest,
+  options?: RequestInit,
+): Promise<Document> => {
+  return customFetch<Document>(getUpdateDocumentTagsUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateTagsRequest),
+  });
+};
+
+export const getUpdateDocumentTagsMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateDocumentTags>>,
+    TError,
+    { id: string; data: BodyType<UpdateTagsRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateDocumentTags>>,
+  TError,
+  { id: string; data: BodyType<UpdateTagsRequest> },
+  TContext
+> => {
+  const mutationKey = ["updateDocumentTags"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateDocumentTags>>,
+    { id: string; data: BodyType<UpdateTagsRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateDocumentTags(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateDocumentTagsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateDocumentTags>>
+>;
+export type UpdateDocumentTagsMutationBody = BodyType<UpdateTagsRequest>;
+export type UpdateDocumentTagsMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Update document tags
+ */
+export const useUpdateDocumentTags = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateDocumentTags>>,
+    TError,
+    { id: string; data: BodyType<UpdateTagsRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateDocumentTags>>,
+  TError,
+  { id: string; data: BodyType<UpdateTagsRequest> },
+  TContext
+> => {
+  return useMutation(getUpdateDocumentTagsMutationOptions(options));
+};
+
+/**
+ * @summary Generate a share token for a document
+ */
+export const getGenerateShareTokenUrl = (id: string) => {
+  return `/api/documents/${id}/share`;
+};
+
+export const generateShareToken = async (
+  id: string,
+  options?: RequestInit,
+): Promise<ShareTokenResponse> => {
+  return customFetch<ShareTokenResponse>(getGenerateShareTokenUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getGenerateShareTokenMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateShareToken>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateShareToken>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["generateShareToken"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateShareToken>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return generateShareToken(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateShareTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateShareToken>>
+>;
+
+export type GenerateShareTokenMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Generate a share token for a document
+ */
+export const useGenerateShareToken = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateShareToken>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateShareToken>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getGenerateShareTokenMutationOptions(options));
+};
+
+/**
+ * @summary Revoke share token for a document
+ */
+export const getRevokeShareTokenUrl = (id: string) => {
+  return `/api/documents/${id}/share`;
+};
+
+export const revokeShareToken = async (
+  id: string,
+  options?: RequestInit,
+): Promise<Document> => {
+  return customFetch<Document>(getRevokeShareTokenUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getRevokeShareTokenMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeShareToken>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof revokeShareToken>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["revokeShareToken"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof revokeShareToken>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return revokeShareToken(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RevokeShareTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof revokeShareToken>>
+>;
+
+export type RevokeShareTokenMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Revoke share token for a document
+ */
+export const useRevokeShareToken = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeShareToken>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof revokeShareToken>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getRevokeShareTokenMutationOptions(options));
+};
+
+/**
+ * @summary List all saved versions of a document
+ */
+export const getListDocumentVersionsUrl = (id: string) => {
+  return `/api/documents/${id}/versions`;
+};
+
+export const listDocumentVersions = async (
+  id: string,
+  options?: RequestInit,
+): Promise<DocumentVersion[]> => {
+  return customFetch<DocumentVersion[]>(getListDocumentVersionsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListDocumentVersionsQueryKey = (id: string) => {
+  return [`/api/documents/${id}/versions`] as const;
+};
+
+export const getListDocumentVersionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listDocumentVersions>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listDocumentVersions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListDocumentVersionsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listDocumentVersions>>
+  > = ({ signal }) => listDocumentVersions(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listDocumentVersions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListDocumentVersionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listDocumentVersions>>
+>;
+export type ListDocumentVersionsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all saved versions of a document
+ */
+
+export function useListDocumentVersions<
+  TData = Awaited<ReturnType<typeof listDocumentVersions>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listDocumentVersions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListDocumentVersionsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Save the current state as a version snapshot
+ */
+export const getSaveDocumentVersionUrl = (id: string) => {
+  return `/api/documents/${id}/versions`;
+};
+
+export const saveDocumentVersion = async (
+  id: string,
+  saveVersionRequest: SaveVersionRequest,
+  options?: RequestInit,
+): Promise<DocumentVersion> => {
+  return customFetch<DocumentVersion>(getSaveDocumentVersionUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(saveVersionRequest),
+  });
+};
+
+export const getSaveDocumentVersionMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveDocumentVersion>>,
+    TError,
+    { id: string; data: BodyType<SaveVersionRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveDocumentVersion>>,
+  TError,
+  { id: string; data: BodyType<SaveVersionRequest> },
+  TContext
+> => {
+  const mutationKey = ["saveDocumentVersion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveDocumentVersion>>,
+    { id: string; data: BodyType<SaveVersionRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return saveDocumentVersion(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveDocumentVersionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveDocumentVersion>>
+>;
+export type SaveDocumentVersionMutationBody = BodyType<SaveVersionRequest>;
+export type SaveDocumentVersionMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Save the current state as a version snapshot
+ */
+export const useSaveDocumentVersion = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveDocumentVersion>>,
+    TError,
+    { id: string; data: BodyType<SaveVersionRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveDocumentVersion>>,
+  TError,
+  { id: string; data: BodyType<SaveVersionRequest> },
+  TContext
+> => {
+  return useMutation(getSaveDocumentVersionMutationOptions(options));
+};
+
+/**
+ * @summary Delete a document version
+ */
+export const getDeleteDocumentVersionUrl = (id: string, versionId: string) => {
+  return `/api/documents/${id}/versions/${versionId}`;
+};
+
+export const deleteDocumentVersion = async (
+  id: string,
+  versionId: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteDocumentVersionUrl(id, versionId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteDocumentVersionMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDocumentVersion>>,
+    TError,
+    { id: string; versionId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteDocumentVersion>>,
+  TError,
+  { id: string; versionId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteDocumentVersion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteDocumentVersion>>,
+    { id: string; versionId: string }
+  > = (props) => {
+    const { id, versionId } = props ?? {};
+
+    return deleteDocumentVersion(id, versionId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteDocumentVersionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteDocumentVersion>>
+>;
+
+export type DeleteDocumentVersionMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Delete a document version
+ */
+export const useDeleteDocumentVersion = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDocumentVersion>>,
+    TError,
+    { id: string; versionId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteDocumentVersion>>,
+  TError,
+  { id: string; versionId: string },
+  TContext
+> => {
+  return useMutation(getDeleteDocumentVersionMutationOptions(options));
+};
+
+/**
+ * @summary Restore a document to a previous version
+ */
+export const getRestoreDocumentVersionUrl = (id: string, versionId: string) => {
+  return `/api/documents/${id}/versions/${versionId}/restore`;
+};
+
+export const restoreDocumentVersion = async (
+  id: string,
+  versionId: string,
+  options?: RequestInit,
+): Promise<Document> => {
+  return customFetch<Document>(getRestoreDocumentVersionUrl(id, versionId), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getRestoreDocumentVersionMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof restoreDocumentVersion>>,
+    TError,
+    { id: string; versionId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof restoreDocumentVersion>>,
+  TError,
+  { id: string; versionId: string },
+  TContext
+> => {
+  const mutationKey = ["restoreDocumentVersion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof restoreDocumentVersion>>,
+    { id: string; versionId: string }
+  > = (props) => {
+    const { id, versionId } = props ?? {};
+
+    return restoreDocumentVersion(id, versionId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RestoreDocumentVersionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof restoreDocumentVersion>>
+>;
+
+export type RestoreDocumentVersionMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Restore a document to a previous version
+ */
+export const useRestoreDocumentVersion = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof restoreDocumentVersion>>,
+    TError,
+    { id: string; versionId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof restoreDocumentVersion>>,
+  TError,
+  { id: string; versionId: string },
+  TContext
+> => {
+  return useMutation(getRestoreDocumentVersionMutationOptions(options));
+};
+
+/**
+ * @summary Save document to GitHub Gist (create or update)
  */
 export const getSaveToGithubUrl = () => {
   return `/api/github/save`;
@@ -594,7 +1370,7 @@ export type SaveToGithubMutationBody = BodyType<SaveToGithubRequest>;
 export type SaveToGithubMutationError = ErrorType<ErrorResponse>;
 
 /**
- * @summary Save document to GitHub Gist
+ * @summary Save document to GitHub Gist (create or update)
  */
 export const useSaveToGithub = <
   TError = ErrorType<ErrorResponse>,

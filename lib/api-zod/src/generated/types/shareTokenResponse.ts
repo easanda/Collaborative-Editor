@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface SaveToGithubResponse {
-  gistId: string;
-  url: string;
-  htmlUrl: string;
-  isUpdate: boolean;
+export interface ShareTokenResponse {
+  shareToken: string;
+  shareUrl: string;
 }
