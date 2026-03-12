@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Collaborative Markdown Editor"
+version = "1.0.0"
+id = "artifacts/markdown-editor"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 26055
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/markdown-editor run dev"
+
+[services.env]
+PORT = "26055"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/markdown-editor", "run", "build"]
+publicDir = "artifacts/markdown-editor/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
