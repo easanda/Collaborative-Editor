@@ -1,0 +1,16 @@
+packages:
+  "socket.io-client": "Real-time communication with the backend"
+  "react-markdown": "Rendering markdown content in the preview pane"
+  "remark-gfm": "GitHub Flavored Markdown support for tables, task lists, etc."
+  "framer-motion": "Smooth animations for modals and UI transitions"
+  "use-debounce": "Debouncing content changes for auto-save functionality"
+  "date-fns": "Formatting timestamps nicely"
+
+images:
+  - path: "artifacts/markdown-editor/public/images/logo.png"
+    description: "A minimal, modern geometric logo for a markdown code editor, deep teal and purple colors on transparent background"
+    aspect_ratio: "1:1"
+
+notes:
+  - Assuming the Socket.IO server is running on the same host/port and handles 'join-document', 'text-update', 'user-joined', and 'user-left' events.
+  - Assuming generated React Query hooks from `@workspace/api-client-react` use `{ data: ... }` object structure for mutations as shown in the API definition.
